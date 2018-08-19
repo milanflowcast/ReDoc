@@ -1,0 +1,1103 @@
+openapi: 3.0.0
+info:
+  description: 'The Flowcast Smartclaims &trade; API is organized around  [REST](http://en.wikipedia.org/wiki/Representational_State_Transfer).  Our API has predictable, resource-oriented URLs, and uses HTTP response codes to indicate API  errors. We use built-in HTTP features, like HTTP authentication and HTTP verbs, which are  understood by off-the-shelf HTTP clients. We support  [cross-origin resource sharing](http://en.wikipedia.org/wiki/Cross-origin_resource_sharing),  allowing you to interact securely with our API from a client-side web application (though you  should never expose your secret API credentials in any public website''s client-side code).  [JSON API](http://jsonapi.org/format/) is returned by all API responses, including errors.'
+  version: 1.0.3
+  title: Smartclaims API Reference
+  contact:
+    email: info@flowcast.ai
+  x-logo:
+    url: 'https://flowcast.ai/img/Logo.png'
+    altText: Flowcast logo
+servers:
+  - url: 'https://api.smartclaims.ai/v1'
+tags:
+  - name: login
+    x-displayName: Login
+    description: 'A bearer token can be obtained by authenticating via the [login](#operation/post-login)  endpoint. Upon successful authentication, a bearer token will be included in the response.  Include an `Authorization` header with this bearer token in all subsequent API requests.  `Authorization: Bearer BQokikJOvBiI2HlWgH4olfQ2`    '
+  - name: retrieve
+    x-displayName: Data Retrieval
+    description: 'Retrieve predictions, predictors, explanations, and outcomes of dispute claims.'
+  - name: train
+    x-displayName: AI Model Training
+    description: Provide data to the AI engine to train the model.
+paths:
+  /login:
+    post:
+      operationId: post-login
+      security: []
+      tags:
+        - login
+      summary: Retrieve a bearer token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: Nike
+                password:
+                  type: string
+                  example: TestPassword
+              required:
+                - username
+                - password
+              additionalProperties: false
+        description: Credentials for authentication.
+      responses:
+        '200':
+          description: Authentication successful. Bearer token generated.
+          content:
+            application/vnd.api+json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        title: 'The Id Schema '
+                        example: '2018-03-09 21:45:13'
+                      type:
+                        type: string
+                        title: 'The Type Schema '
+                        example: Token
+                      attributes:
+                        type: object
+                        properties:
+                          access_token:
+                            type: string
+                            title: The access token
+                            example: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1MzQ2MTY1NTYsIm5iZiI6MTUz
+                          token_type:
+                            type: string
+                            title: The type of token
+                            example: Bearer
+                          expires_in:
+                            type: number
+                            title: 'The expiration of the token from now, in seconds'
+                            example: 3600
+                        required:
+                          - access_token
+                          - token_type
+                          - expires_in
+                    required:
+                      - id
+                      - type
+                      - attributes
+        '400':
+          $ref: '#/components/responses/400'
+        '404':
+          description: Authentication failed. An invalid username or password was provided.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/components/responses/404/content/application~1vnd.api%2Bjson/schema'
+                x-miro: 404_output.json
+  /predictors:
+    post:
+      operationId: post-predictors
+      tags:
+        - train
+      summary: Train the AI model in predictions by providing daily data
+      description: 'By passing in the appropriate options, you can insert daily data into the AI engine for training the model.'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                predictors:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      dispute_id:
+                        type: string
+                        title: Unique dispute id provided by customer
+                        example: 13DA56C98B
+                      dispute_date:
+                        type: string
+                        pattern: '^(?:(?=[02468][048]00|[13579][26]00|[0-9][0-9]0[48]|[0-9][0-9][2468][048]|[0-9][0-9][13579][26])\d{4}(?:(-|)(?:(?:00[1-9]|0[1-9][0-9]|[1-2][0-9][0-9]|3[0-5][0-9]|36[0-6])|(?:01|03|05|07|08|10|12)(?:\1(?:0[1-9]|[12][0-9]|3[01]))?|(?:04|06|09|11)(?:\1(?:0[1-9]|[12][0-9]|30))?|02(?:\1(?:0[1-9]|[12][0-9]))?|W(?:0[1-9]|[1-4][0-9]|5[0-3])(?:\1[1-7])?))?)$|^(?:(?![02468][048]00|[13579][26]00|[0-9][0-9]0[48]|[0-9][0-9][2468][048]|[0-9][0-9][13579][26])\d{4}(?:(-|)(?:(?:00[1-9]|0[1-9][0-9]|[1-2][0-9][0-9]|3[0-5][0-9]|36[0-5])|(?:01|03|05|07|08|10|12)(?:\2(?:0[1-9]|[12][0-9]|3[01]))?|(?:04|06|09|11)(?:\2(?:0[1-9]|[12][0-9]|30))?|(?:02)(?:\2(?:0[1-9]|1[0-9]|2[0-8]))?|W(?:0[1-9]|[1-4][0-9]|5[0-3])(?:\2[1-7])?))?)$'
+                        title: Date customer opened dispute case
+                        example: '2018-01-13'
+                      dispute_amount:
+                        type: number
+                        title: 'Amount disputed by customer '
+                        example: 132.11
+                      dispute_quantity:
+                        type: integer
+                        title: Quantity of product disputed by customer
+                        example: 400
+                      dispute_price:
+                        type: number
+                        title: Price per unit of disputed goods
+                        example: 33.13
+                      bill_date:
+                        type: string
+                        pattern: '^(?:(?=[02468][048]00|[13579][26]00|[0-9][0-9]0[48]|[0-9][0-9][2468][048]|[0-9][0-9][13579][26])\d{4}(?:(-|)(?:(?:00[1-9]|0[1-9][0-9]|[1-2][0-9][0-9]|3[0-5][0-9]|36[0-6])|(?:01|03|05|07|08|10|12)(?:\1(?:0[1-9]|[12][0-9]|3[01]))?|(?:04|06|09|11)(?:\1(?:0[1-9]|[12][0-9]|30))?|02(?:\1(?:0[1-9]|[12][0-9]))?|W(?:0[1-9]|[1-4][0-9]|5[0-3])(?:\1[1-7])?))?)$|^(?:(?![02468][048]00|[13579][26]00|[0-9][0-9]0[48]|[0-9][0-9][2468][048]|[0-9][0-9][13579][26])\d{4}(?:(-|)(?:(?:00[1-9]|0[1-9][0-9]|[1-2][0-9][0-9]|3[0-5][0-9]|36[0-5])|(?:01|03|05|07|08|10|12)(?:\2(?:0[1-9]|[12][0-9]|3[01]))?|(?:04|06|09|11)(?:\2(?:0[1-9]|[12][0-9]|30))?|(?:02)(?:\2(?:0[1-9]|1[0-9]|2[0-8]))?|W(?:0[1-9]|[1-4][0-9]|5[0-3])(?:\2[1-7])?))?)$'
+                        title: Date bill was issued
+                        example: '2018-01-13'
+                      bill_due_date:
+                        type: string
+                        pattern: '^(?:(?=[02468][048]00|[13579][26]00|[0-9][0-9]0[48]|[0-9][0-9][2468][048]|[0-9][0-9][13579][26])\d{4}(?:(-|)(?:(?:00[1-9]|0[1-9][0-9]|[1-2][0-9][0-9]|3[0-5][0-9]|36[0-6])|(?:01|03|05|07|08|10|12)(?:\1(?:0[1-9]|[12][0-9]|3[01]))?|(?:04|06|09|11)(?:\1(?:0[1-9]|[12][0-9]|30))?|02(?:\1(?:0[1-9]|[12][0-9]))?|W(?:0[1-9]|[1-4][0-9]|5[0-3])(?:\1[1-7])?))?)$|^(?:(?![02468][048]00|[13579][26]00|[0-9][0-9]0[48]|[0-9][0-9][2468][048]|[0-9][0-9][13579][26])\d{4}(?:(-|)(?:(?:00[1-9]|0[1-9][0-9]|[1-2][0-9][0-9]|3[0-5][0-9]|36[0-5])|(?:01|03|05|07|08|10|12)(?:\2(?:0[1-9]|[12][0-9]|3[01]))?|(?:04|06|09|11)(?:\2(?:0[1-9]|[12][0-9]|30))?|(?:02)(?:\2(?:0[1-9]|1[0-9]|2[0-8]))?|W(?:0[1-9]|[1-4][0-9]|5[0-3])(?:\2[1-7])?))?)$'
+                        title: Date payment was due
+                        example: '2018-01-13'
+                      bill_amount:
+                        type: number
+                        title: Total billed amount on disputed item(s)
+                        example: 132.11
+                      bill_quantity:
+                        type: integer
+                        title: Billed quantity of product
+                        example: 400
+                      bill_price:
+                        type: number
+                        title: Billed price of product
+                        example: 55.45000076293945
+                      bill_currency:
+                        type: string
+                        minLength: 3
+                        maxLength: 3
+                        title: 3 letter ISO 4217 currency code
+                        example: CAD
+                      customer_id:
+                        type: string
+                        title: Unique ID specifying buyer
+                        example: '15432'
+                      customer_name:
+                        type: string
+                        title: Name of buying company
+                        example: ACME INC
+                      customer_group:
+                        type: string
+                        title: Customer type / grouping / rollup
+                        example: RETAIL
+                      vendor_id:
+                        type: string
+                        title: ID identifying the selling entity
+                        example: '234'
+                      vendor_name:
+                        type: string
+                        title: Name associated with vendor_id
+                        example: INITECH
+                      vendor_group:
+                        type: string
+                        title: Vendor type / grouping / rollup
+                        example: WEST COAST
+                      reason_code:
+                        type: string
+                        title: ID specifying root cause for dispute
+                        example: '332'
+                      reason_desc:
+                        type: string
+                        title: Text description analogous to reason_code
+                        example: PRICE MATCH DISCREPENCY
+                      reason_group:
+                        type: string
+                        title: Reason code type / grouping / rollup
+                        example: QUANTITY
+                      product_id:
+                        type: string
+                        title: SKU or other identifier for specific product
+                        example: '12555323455'
+                      product_desc:
+                        type: string
+                        title: Text description analogous to product id
+                        example: BLUE SIZE 32 JEANS
+                      product_group:
+                        type: string
+                        title: Product type / grouping / rollup
+                        example: PANTS
+                      destination_city:
+                        type: string
+                        title: City the product was shipped to
+                        example: ATLANTA
+                      destination_state:
+                        type: string
+                        title: State / Region the product was shipped to
+                        example: GEORGIA
+                      destination_country:
+                        type: string
+                        title: Country the product was shipped to (ISO ALPHA-2)
+                        minLength: 2
+                        maxLength: 2
+                        example: US
+                      distribution_id:
+                        type: string
+                        title: 'ID specifying distribution center, plant, etc'
+                        example: '33454'
+                      distribution_name:
+                        type: string
+                        title: Name associated with distribution_id
+                        example: INITECH LOS ANGELES CA
+                      distribution_group:
+                        type: string
+                        title: Distribution type / grouping / rollup
+                        example: DISTRIBUTION CENTER
+                      distribution_city:
+                        type: string
+                        title: City the product was shipped from
+                        example: LOS ANGELES
+                      distribution_state:
+                        type: string
+                        title: State / Region the product was shipped from
+                        example: CA
+                      distribution_country:
+                        type: string
+                        minLength: 2
+                        maxLength: 2
+                        title: Country the product was shipped from (ISO ALPHA-2)
+                        example: US
+                    required:
+                      - dispute_id
+                      - dispute_date
+                      - dispute_amount
+                      - customer_id
+                    additionalProperties: false
+        description: Input of values to factors that would aid the AI engine in making a prediction and disputes.
+      responses:
+        '202':
+          description: 'The request has been accepted for processing, but the processing has not been completed.'
+          content:
+            application/vnd.api+json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        title: 'The Id Schema '
+                        example: '2018-03-09 21:45:13'
+                      type:
+                        type: string
+                        title: 'The Type Schema '
+                        example: Predictors
+                      attributes:
+                        type: object
+                        properties:
+                          num_predictors:
+                            type: integer
+                            title: The number of predictors accepted.
+                            example: 10
+                        required:
+                          - num_predictors
+                    required:
+                      - id
+                      - type
+                      - attributes
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '409':
+          $ref: '#/components/responses/409'
+  /outcomes:
+    post:
+      operationId: post-outcomes
+      tags:
+        - train
+      summary: Train the AI model in predictions by providing outcomes
+      description: 'By passing in the appropriate options, you can insert outcome data into the AI engine for training the model.'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                outcomes:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      outcome:
+                        type: string
+                        title: Dispute investigation outcome.
+                        example: Invalid
+                        enum:
+                          - Valid
+                          - Invalid
+                          - Partial
+                          - Open
+                      amount_collected:
+                        type: integer
+                        title: 'For invalid or partial outcomes, the total amount that was collected from the buyer '
+                        example: 12
+                      dispute_id:
+                        type: string
+                        title: 'Unique dispute id provided by customer '
+                        example: 13DA56C98B
+                    required:
+                      - outcome
+                      - dispute_id
+                    additionalProperties: false
+        description: Actual outcomes of the dispute.
+      responses:
+        '202':
+          description: 'The request has been accepted for processing, but the processing has not been completed.'
+          content:
+            application/vnd.api+json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        title: 'The Id Schema '
+                        example: '2018-03-09 21:45:13'
+                      type:
+                        type: string
+                        title: 'The Type Schema '
+                        example: Outcomes
+                      attributes:
+                        type: object
+                        properties:
+                          num_outcomes:
+                            type: integer
+                            title: The number of outcomes accepted.
+                            example: 10
+                        required:
+                          - num_outcomes
+                    required:
+                      - id
+                      - type
+                      - attributes
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '409':
+          $ref: '#/components/responses/409'
+  '/explanations/{dispute_id}':
+    get:
+      operationId: get-explanations
+      tags:
+        - retrieve
+      summary: Retrieve explanations for a dispute
+      description: |
+        By passing in the `dispute_id`, you can get the explanations related to that dispute.
+      parameters:
+        - name: dispute_id
+          in: path
+          description: dispute ID of the claim to retrieve.
+          required: true
+          schema:
+            type: string
+          example: 13DA56C98B
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/paths/~1explanations/post/responses/200/content/application~1vnd.api%2Bjson/schema'
+                x-miro: get_output_explanations.json
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+  '/outcome/{dispute_id}':
+    get:
+      operationId: get-outcome
+      tags:
+        - retrieve
+      summary: Retrieve the outcome for a dispute
+      description: |
+        By passing in the `dispute_id`, you can get the outcome related to that dispute.
+      parameters:
+        - name: dispute_id
+          in: path
+          description: dispute ID of the claim to retrieve.
+          required: true
+          schema:
+            type: string
+          example: 13DA56C98B
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/vnd.api+json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          title: 'The Id Schema '
+                          example: '46437'
+                        type:
+                          type: string
+                          title: 'The Type Schema '
+                          example: Outcome
+                        attributes:
+                          type: object
+                          properties:
+                            outcome:
+                              type: string
+                              title: Dispute investigation outcome.
+                              example: Invalid
+                              enum:
+                                - Valid
+                                - Invalid
+                                - Partial
+                                - Open
+                            outcome_time:
+                              type: string
+                              title: Auto generated when inserted to db.
+                              example: '2018-05-04'
+                            amount_collected:
+                              type: integer
+                              title: 'For invalid or partial outcomes, the total amount that was collected from the buyer '
+                              example: 12
+                            dispute_id:
+                              type: string
+                              title: 'Unique dispute id provided by customer '
+                              example: 13DA56C98B
+                          required:
+                            - outcome
+                            - dispute_id
+                          additionalProperties: false
+                      required:
+                        - id
+                        - type
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+  '/predictions/{dispute_id}':
+    get:
+      operationId: get-predictions
+      tags:
+        - retrieve
+      summary: Retrieve predictions for a dispute
+      description: |
+        By passing in the `dispute_id`, you can get the predictions related to that dispute.
+      parameters:
+        - name: dispute_id
+          in: path
+          description: dispute ID of the claim to retrieve.
+          required: true
+          schema:
+            type: string
+          example: 13DA56C98B
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/vnd.api+json:
+              schema:
+                $ref: '#/paths/~1predictions/post/responses/200/content/application~1vnd.api%2Bjson/schema'
+                x-miro: get_output_predictions.json
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+  '/predictor/{dispute_id}':
+    get:
+      operationId: get-predictor
+      tags:
+        - retrieve
+      summary: Retrieve the predictor for a dispute
+      description: |
+        By passing in the `dispute_id`, you can get the predictor related to that dispute.
+      parameters:
+        - name: dispute_id
+          in: path
+          description: dispute ID of the claim to retrieve.
+          required: true
+          schema:
+            type: string
+          example: 13DA56C98B
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/vnd.api+json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          title: 'The Id Schema '
+                          example: '46437'
+                        type:
+                          type: string
+                          title: 'The Type Schema '
+                          example: Predictor
+                        attributes:
+                          type: object
+                          properties:
+                            dispute_id:
+                              type: string
+                              title: Unique dispute id provided by customer
+                              example: 13DA56C98B
+                            predictor_time:
+                              type: string
+                              pattern: '^(?:(?=[02468][048]00|[13579][26]00|[0-9][0-9]0[48]|[0-9][0-9][2468][048]|[0-9][0-9][13579][26])\d{4}(?:(-|)(?:(?:00[1-9]|0[1-9][0-9]|[1-2][0-9][0-9]|3[0-5][0-9]|36[0-6])|(?:01|03|05|07|08|10|12)(?:\1(?:0[1-9]|[12][0-9]|3[01]))?|(?:04|06|09|11)(?:\1(?:0[1-9]|[12][0-9]|30))?|02(?:\1(?:0[1-9]|[12][0-9]))?|W(?:0[1-9]|[1-4][0-9]|5[0-3])(?:\1[1-7])?))?)$|^(?:(?![02468][048]00|[13579][26]00|[0-9][0-9]0[48]|[0-9][0-9][2468][048]|[0-9][0-9][13579][26])\d{4}(?:(-|)(?:(?:00[1-9]|0[1-9][0-9]|[1-2][0-9][0-9]|3[0-5][0-9]|36[0-5])|(?:01|03|05|07|08|10|12)(?:\2(?:0[1-9]|[12][0-9]|3[01]))?|(?:04|06|09|11)(?:\2(?:0[1-9]|[12][0-9]|30))?|(?:02)(?:\2(?:0[1-9]|1[0-9]|2[0-8]))?|W(?:0[1-9]|[1-4][0-9]|5[0-3])(?:\2[1-7])?))?)$'
+                              title: Date autogenerated when logged to db
+                              example: '2018-01-13'
+                            dispute_date:
+                              type: string
+                              pattern: '^(?:(?=[02468][048]00|[13579][26]00|[0-9][0-9]0[48]|[0-9][0-9][2468][048]|[0-9][0-9][13579][26])\d{4}(?:(-|)(?:(?:00[1-9]|0[1-9][0-9]|[1-2][0-9][0-9]|3[0-5][0-9]|36[0-6])|(?:01|03|05|07|08|10|12)(?:\1(?:0[1-9]|[12][0-9]|3[01]))?|(?:04|06|09|11)(?:\1(?:0[1-9]|[12][0-9]|30))?|02(?:\1(?:0[1-9]|[12][0-9]))?|W(?:0[1-9]|[1-4][0-9]|5[0-3])(?:\1[1-7])?))?)$|^(?:(?![02468][048]00|[13579][26]00|[0-9][0-9]0[48]|[0-9][0-9][2468][048]|[0-9][0-9][13579][26])\d{4}(?:(-|)(?:(?:00[1-9]|0[1-9][0-9]|[1-2][0-9][0-9]|3[0-5][0-9]|36[0-5])|(?:01|03|05|07|08|10|12)(?:\2(?:0[1-9]|[12][0-9]|3[01]))?|(?:04|06|09|11)(?:\2(?:0[1-9]|[12][0-9]|30))?|(?:02)(?:\2(?:0[1-9]|1[0-9]|2[0-8]))?|W(?:0[1-9]|[1-4][0-9]|5[0-3])(?:\2[1-7])?))?)$'
+                              title: Date customer opened dispute case
+                              example: '2018-01-13'
+                            dispute_amount:
+                              type: number
+                              title: 'Amount disputed by customer '
+                              example: 132.11
+                            dispute_quantity:
+                              type: integer
+                              title: Quantity of product disputed by customer
+                              example: 400
+                            dispute_price:
+                              type: number
+                              title: Price per unit of disputed goods
+                              example: 33.13
+                            bill_date:
+                              type: string
+                              pattern: '^(?:(?=[02468][048]00|[13579][26]00|[0-9][0-9]0[48]|[0-9][0-9][2468][048]|[0-9][0-9][13579][26])\d{4}(?:(-|)(?:(?:00[1-9]|0[1-9][0-9]|[1-2][0-9][0-9]|3[0-5][0-9]|36[0-6])|(?:01|03|05|07|08|10|12)(?:\1(?:0[1-9]|[12][0-9]|3[01]))?|(?:04|06|09|11)(?:\1(?:0[1-9]|[12][0-9]|30))?|02(?:\1(?:0[1-9]|[12][0-9]))?|W(?:0[1-9]|[1-4][0-9]|5[0-3])(?:\1[1-7])?))?)$|^(?:(?![02468][048]00|[13579][26]00|[0-9][0-9]0[48]|[0-9][0-9][2468][048]|[0-9][0-9][13579][26])\d{4}(?:(-|)(?:(?:00[1-9]|0[1-9][0-9]|[1-2][0-9][0-9]|3[0-5][0-9]|36[0-5])|(?:01|03|05|07|08|10|12)(?:\2(?:0[1-9]|[12][0-9]|3[01]))?|(?:04|06|09|11)(?:\2(?:0[1-9]|[12][0-9]|30))?|(?:02)(?:\2(?:0[1-9]|1[0-9]|2[0-8]))?|W(?:0[1-9]|[1-4][0-9]|5[0-3])(?:\2[1-7])?))?)$'
+                              title: Date bill was issued
+                              example: '2018-01-13'
+                            bill_due_date:
+                              type: string
+                              pattern: '^(?:(?=[02468][048]00|[13579][26]00|[0-9][0-9]0[48]|[0-9][0-9][2468][048]|[0-9][0-9][13579][26])\d{4}(?:(-|)(?:(?:00[1-9]|0[1-9][0-9]|[1-2][0-9][0-9]|3[0-5][0-9]|36[0-6])|(?:01|03|05|07|08|10|12)(?:\1(?:0[1-9]|[12][0-9]|3[01]))?|(?:04|06|09|11)(?:\1(?:0[1-9]|[12][0-9]|30))?|02(?:\1(?:0[1-9]|[12][0-9]))?|W(?:0[1-9]|[1-4][0-9]|5[0-3])(?:\1[1-7])?))?)$|^(?:(?![02468][048]00|[13579][26]00|[0-9][0-9]0[48]|[0-9][0-9][2468][048]|[0-9][0-9][13579][26])\d{4}(?:(-|)(?:(?:00[1-9]|0[1-9][0-9]|[1-2][0-9][0-9]|3[0-5][0-9]|36[0-5])|(?:01|03|05|07|08|10|12)(?:\2(?:0[1-9]|[12][0-9]|3[01]))?|(?:04|06|09|11)(?:\2(?:0[1-9]|[12][0-9]|30))?|(?:02)(?:\2(?:0[1-9]|1[0-9]|2[0-8]))?|W(?:0[1-9]|[1-4][0-9]|5[0-3])(?:\2[1-7])?))?)$'
+                              title: Date payment was due
+                              example: '2018-01-13'
+                            bill_amount:
+                              type: number
+                              title: Total billed amount on disputed item(s)
+                              example: 132.11
+                            bill_quantity:
+                              type: integer
+                              title: Billed quantity of product
+                              example: 400
+                            bill_price:
+                              type: number
+                              title: Billed price of product
+                              example: 55.45000076293945
+                            bill_currency:
+                              type: string
+                              minLength: 3
+                              maxLength: 3
+                              title: 3 letter ISO 4217 currency code
+                              example: CAD
+                            customer_id:
+                              type: string
+                              title: Unique ID specifying buyer
+                              example: '15432'
+                            customer_name:
+                              type: string
+                              title: Name of buying company
+                              example: ACME INC
+                            customer_group:
+                              type: string
+                              title: Customer type / grouping / rollup
+                              example: RETAIL
+                            vendor_id:
+                              type: string
+                              title: ID identifying the selling entity
+                              example: '234'
+                            vendor_name:
+                              type: string
+                              title: Name associated with vendor_id
+                              example: INITECH
+                            vendor_group:
+                              type: string
+                              title: Vendor type / grouping / rollup
+                              example: WEST COAST
+                            reason_code:
+                              type: string
+                              title: ID specifying root cause for dispute
+                              example: '332'
+                            reason_desc:
+                              type: string
+                              title: Text description analogous to reason_code
+                              example: PRICE MATCH DISCREPENCY
+                            reason_group:
+                              type: string
+                              title: Reason code type / grouping / rollup
+                              example: QUANTITY
+                            product_id:
+                              type: string
+                              title: SKU or other identifier for specific product
+                              example: '12555323455'
+                            product_desc:
+                              type: string
+                              title: Text description analogous to product id
+                              example: BLUE SIZE 32 JEANS
+                            product_group:
+                              type: string
+                              title: Product type / grouping / rollup
+                              example: PANTS
+                            destination_city:
+                              type: string
+                              title: City the product was shipped to
+                              example: ATLANTA
+                            destination_state:
+                              type: string
+                              title: State / Region the product was shipped to
+                              example: GEORGIA
+                            destination_country:
+                              type: string
+                              title: Country the product was shipped to (ISO ALPHA-2)
+                              minLength: 2
+                              maxLength: 2
+                              example: US
+                            distribution_id:
+                              type: string
+                              title: 'ID specifying distribution center, plant, etc'
+                              example: '33454'
+                            distribution_name:
+                              type: string
+                              title: Name associated with distribution_id
+                              example: INITECH LOS ANGELES CA
+                            distribution_group:
+                              type: string
+                              title: Distribution type / grouping / rollup
+                              example: DISTRIBUTION CENTER
+                            distribution_city:
+                              type: string
+                              title: City the product was shipped from
+                              example: LOS ANGELES
+                            distribution_state:
+                              type: string
+                              title: State / Region the product was shipped from
+                              example: CA
+                            distribution_country:
+                              type: string
+                              minLength: 2
+                              maxLength: 2
+                              title: Country the product was shipped from (ISO ALPHA-2)
+                              example: US
+                          required:
+                            - dispute_id
+                            - dispute_date
+                            - dispute_amount
+                            - customer_id
+                          additionalProperties: false
+                      required:
+                        - id
+                        - type
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+  /explanations:
+    post:
+      operationId: post-explanations
+      tags:
+        - retrieve
+      summary: Retrieve explanations using other filters
+      description: |
+        By passing in other filters, you can get the explanations related to those disputes. Either provide an array of <code>dispute_ids</code> or <code>from</code>  and/or <code>to</code> dates using format <em>yyyy-mm-dd</em>.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                dispute_ids:
+                  title: The array of dispute_ids for explanations to return
+                  type: array
+                  items:
+                    type: string
+                from:
+                  title: The beginning date of all explanations to return
+                  type: string
+                  pattern: '^(?:(?=[02468][048]00|[13579][26]00|[0-9][0-9]0[48]|[0-9][0-9][2468][048]|[0-9][0-9][13579][26])\d{4}(?:(-|)(?:(?:00[1-9]|0[1-9][0-9]|[1-2][0-9][0-9]|3[0-5][0-9]|36[0-6])|(?:01|03|05|07|08|10|12)(?:\1(?:0[1-9]|[12][0-9]|3[01]))?|(?:04|06|09|11)(?:\1(?:0[1-9]|[12][0-9]|30))?|02(?:\1(?:0[1-9]|[12][0-9]))?|W(?:0[1-9]|[1-4][0-9]|5[0-3])(?:\1[1-7])?))?)$|^(?:(?![02468][048]00|[13579][26]00|[0-9][0-9]0[48]|[0-9][0-9][2468][048]|[0-9][0-9][13579][26])\d{4}(?:(-|)(?:(?:00[1-9]|0[1-9][0-9]|[1-2][0-9][0-9]|3[0-5][0-9]|36[0-5])|(?:01|03|05|07|08|10|12)(?:\2(?:0[1-9]|[12][0-9]|3[01]))?|(?:04|06|09|11)(?:\2(?:0[1-9]|[12][0-9]|30))?|(?:02)(?:\2(?:0[1-9]|1[0-9]|2[0-8]))?|W(?:0[1-9]|[1-4][0-9]|5[0-3])(?:\2[1-7])?))?)$'
+                  x-message:
+                    pattern: Enter a valid date for 'from' using format yyyy-mm-dd
+                to:
+                  title: The end date of all explanations to return
+                  type: string
+                  pattern: '^(?:(?=[02468][048]00|[13579][26]00|[0-9][0-9]0[48]|[0-9][0-9][2468][048]|[0-9][0-9][13579][26])\d{4}(?:(-|)(?:(?:00[1-9]|0[1-9][0-9]|[1-2][0-9][0-9]|3[0-5][0-9]|36[0-6])|(?:01|03|05|07|08|10|12)(?:\1(?:0[1-9]|[12][0-9]|3[01]))?|(?:04|06|09|11)(?:\1(?:0[1-9]|[12][0-9]|30))?|02(?:\1(?:0[1-9]|[12][0-9]))?|W(?:0[1-9]|[1-4][0-9]|5[0-3])(?:\1[1-7])?))?)$|^(?:(?![02468][048]00|[13579][26]00|[0-9][0-9]0[48]|[0-9][0-9][2468][048]|[0-9][0-9][13579][26])\d{4}(?:(-|)(?:(?:00[1-9]|0[1-9][0-9]|[1-2][0-9][0-9]|3[0-5][0-9]|36[0-5])|(?:01|03|05|07|08|10|12)(?:\2(?:0[1-9]|[12][0-9]|3[01]))?|(?:04|06|09|11)(?:\2(?:0[1-9]|[12][0-9]|30))?|(?:02)(?:\2(?:0[1-9]|1[0-9]|2[0-8]))?|W(?:0[1-9]|[1-4][0-9]|5[0-3])(?:\2[1-7])?))?)$'
+                  x-message:
+                    pattern: Enter a valid date for 'to' using format yyyy-mm-dd
+              additionalProperties: false
+              oneOf:
+                - required:
+                    - dispute_ids
+                - anyOf:
+                    - required:
+                        - from
+                    - required:
+                        - to
+              example:
+                from: '2018-01-01'
+                to: '2018-01-02'
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/vnd.api+json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          title: 'The Id Schema '
+                          example: '46437'
+                        type:
+                          type: string
+                          title: 'The Type Schema '
+                          example: Explanation
+                        attributes:
+                          type: object
+                          properties:
+                            explanation_time:
+                              type: string
+                              title: Auto-generated when logged to db
+                              example: '2018-03-09'
+                            dispute_id:
+                              type: string
+                              title: 'Unique dispute id provided by customer input through API '
+                              example: 13DA56C98B
+                            model_id:
+                              type: string
+                              title: unique ID identifying the particular version of the explanations model that was used for generating the explanations
+                              example: cust1_rf_2018_02_17
+                            rank:
+                              type: integer
+                              title: 'Rank order of the explanation reason.  Default configuration is 5 total fields, so 1 would indicate the highest impact variable, 2 would indicate the next highest impact variable, etc.  Derived from the absolute value of the importance'
+                              example: 1
+                            field:
+                              type: string
+                              title: The field from the data that is in the top list of important factors for this dispute.  Note this includes input raw fields and generated features.
+                              example: CustAvgClaimAmt90
+                            importance:
+                              type: number
+                              title: 'Numerical value representing importance.  Positive numbers indicate the field has the effect of increasing the probability of invalid, negative numbers indicate the field has the effect of decreasing the probability of invalid.'
+                              example: 0.125651988327344
+                          required:
+                            - explanation_time
+                            - dispute_id
+                            - model_id
+                            - rank
+                            - field
+                            - importance
+                      required:
+                        - id
+                        - type
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+  /predictions:
+    post:
+      operationId: post-predictions
+      tags:
+        - retrieve
+      summary: Retrieve predictions using other filters
+      description: |
+        By passing in other filters, you can get the predictions related to those disputes. Either provide an array of <code>dispute_ids</code> or <code>from</code>  and/or <code>to</code> dates using format <em>yyyy-mm-dd</em>.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                dispute_ids:
+                  title: The array of dispute_ids for predictions to return
+                  type: array
+                  items:
+                    type: string
+                from:
+                  title: The beginning date of all predictions to return
+                  type: string
+                  pattern: '^(?:(?=[02468][048]00|[13579][26]00|[0-9][0-9]0[48]|[0-9][0-9][2468][048]|[0-9][0-9][13579][26])\d{4}(?:(-|)(?:(?:00[1-9]|0[1-9][0-9]|[1-2][0-9][0-9]|3[0-5][0-9]|36[0-6])|(?:01|03|05|07|08|10|12)(?:\1(?:0[1-9]|[12][0-9]|3[01]))?|(?:04|06|09|11)(?:\1(?:0[1-9]|[12][0-9]|30))?|02(?:\1(?:0[1-9]|[12][0-9]))?|W(?:0[1-9]|[1-4][0-9]|5[0-3])(?:\1[1-7])?))?)$|^(?:(?![02468][048]00|[13579][26]00|[0-9][0-9]0[48]|[0-9][0-9][2468][048]|[0-9][0-9][13579][26])\d{4}(?:(-|)(?:(?:00[1-9]|0[1-9][0-9]|[1-2][0-9][0-9]|3[0-5][0-9]|36[0-5])|(?:01|03|05|07|08|10|12)(?:\2(?:0[1-9]|[12][0-9]|3[01]))?|(?:04|06|09|11)(?:\2(?:0[1-9]|[12][0-9]|30))?|(?:02)(?:\2(?:0[1-9]|1[0-9]|2[0-8]))?|W(?:0[1-9]|[1-4][0-9]|5[0-3])(?:\2[1-7])?))?)$'
+                  x-message:
+                    pattern: Enter a valid date for 'from' using format yyyy-mm-dd
+                to:
+                  title: The end date of all predictions to return
+                  type: string
+                  pattern: '^(?:(?=[02468][048]00|[13579][26]00|[0-9][0-9]0[48]|[0-9][0-9][2468][048]|[0-9][0-9][13579][26])\d{4}(?:(-|)(?:(?:00[1-9]|0[1-9][0-9]|[1-2][0-9][0-9]|3[0-5][0-9]|36[0-6])|(?:01|03|05|07|08|10|12)(?:\1(?:0[1-9]|[12][0-9]|3[01]))?|(?:04|06|09|11)(?:\1(?:0[1-9]|[12][0-9]|30))?|02(?:\1(?:0[1-9]|[12][0-9]))?|W(?:0[1-9]|[1-4][0-9]|5[0-3])(?:\1[1-7])?))?)$|^(?:(?![02468][048]00|[13579][26]00|[0-9][0-9]0[48]|[0-9][0-9][2468][048]|[0-9][0-9][13579][26])\d{4}(?:(-|)(?:(?:00[1-9]|0[1-9][0-9]|[1-2][0-9][0-9]|3[0-5][0-9]|36[0-5])|(?:01|03|05|07|08|10|12)(?:\2(?:0[1-9]|[12][0-9]|3[01]))?|(?:04|06|09|11)(?:\2(?:0[1-9]|[12][0-9]|30))?|(?:02)(?:\2(?:0[1-9]|1[0-9]|2[0-8]))?|W(?:0[1-9]|[1-4][0-9]|5[0-3])(?:\2[1-7])?))?)$'
+                  x-message:
+                    pattern: Enter a valid date for 'to' using format yyyy-mm-dd
+              additionalProperties: false
+              oneOf:
+                - required:
+                    - dispute_ids
+                - anyOf:
+                    - required:
+                        - from
+                    - required:
+                        - to
+              example:
+                dispute_ids:
+                  - 13DA56C98B
+                  - 14DF98H28N
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/vnd.api+json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          title: 'The Id Schema '
+                          default: 0
+                          example: 3
+                        type:
+                          type: string
+                          title: 'The Type Schema '
+                          default: ''
+                          example: Prediction
+                        attributes:
+                          type: object
+                          properties:
+                            prediction_time:
+                              type: string
+                              title: Auto-generated when logged to db
+                              example: '2018-03-09'
+                            dispute_id:
+                              type: string
+                              title: Unique dispute id provided by customer input through API
+                              example: 13DA56C98B
+                            model_id:
+                              type: string
+                              title: Unique ID identifying the particular version of the model that was used for scoring
+                              example: cust1_rf_2018_02_17
+                            invalid_probability:
+                              type: number
+                              title: Number ranging from 0 to 1 indicating the probability of the dispute being invalid
+                              example: 0.34
+                            invalid_percentile:
+                              type: integer
+                              title: 'Integer ranging from 1 to 100 indicating the rank order of the dispute on likelihood of invalid. 1 indicates the dispute is in the bottom 1% of likelihood of invalid, while 100% means the dispute is in the top 1%.'
+                              example: 45
+                            invalid_bucket:
+                              type: integer
+                              title: 'Workflow bucket expressed as an integer, based on the invalid_probability. Configurable. Lower number would indicate less likelihood of invalid.  For example, there could be 5 buckets, where 1 indicates "auto-clear", 5 represents "auto-investigate", and 2-4 rank order the remaining disputes by likelihood of invalid.'
+                              example: 2
+                          required:
+                            - prediction_time
+                            - dispute_id
+                            - model_id
+                            - invalid_probability
+                            - invalid_percentile
+                            - invalid_bucket
+                      required:
+                        - id
+                        - type
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+security:
+  - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: 'Authenticate your account by using [bearer auth](https://tools.ietf.org/html/rfc6750)  for API requests. All API requests must be made over [HTTPS](http://en.wikipedia.org/wiki/HTTP_Secure).  Calls made over plain HTTP will fail. API requests without authentication will also fail.'
+  responses:
+    '400':
+      description: 'Bad Request / Invalid input, usually a Schema Validation Error.'
+      content:
+        application/vnd.api+json:
+          schema:
+            type: object
+            properties:
+              errors:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    status:
+                      type: integer
+                      title: 'The Status Schema '
+                      example: 400
+                    source:
+                      type: object
+                      properties:
+                        pointer:
+                          type: string
+                          title: 'The Pointer Schema '
+                          example: /properties/to
+                    detail:
+                      type: object
+                      properties:
+                        message:
+                          type: string
+                          title: 'The Message Schema '
+                          example: Enter a valid date for 'to' using format yyyy-mm-dd
+                        validator:
+                          type: string
+                          title: 'The Validator Schema '
+                          example: pattern
+                        validator_value:
+                          type: string
+                          title: 'The Validator_value Schema '
+                          example: oneOf
+    '401':
+      description: Unauthorized
+      content:
+        application/vnd.api+json:
+          schema:
+            type: object
+            properties:
+              errors:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    status:
+                      type: integer
+                      title: 'The Status Schema '
+                      example: 401
+                    detail:
+                      type: object
+                      properties:
+                        message:
+                          type: string
+                          title: 'The Message Schema '
+                          example: Unauthorized
+    '403':
+      description: Forbidden
+      content:
+        application/vnd.api+json:
+          schema:
+            type: object
+            properties:
+              errors:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    status:
+                      type: integer
+                      title: 'The Status Schema '
+                      example: 403
+                    detail:
+                      type: object
+                      properties:
+                        message:
+                          type: string
+                          title: 'The Message Schema '
+                          example: Access token does not have the required scope
+    '404':
+      description: Dispute / Data Not Found
+      content:
+        application/vnd.api+json:
+          schema:
+            type: object
+            properties:
+              errors:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    status:
+                      type: integer
+                      title: 'The Status Schema '
+                      example: 404
+                    detail:
+                      type: object
+                      properties:
+                        message:
+                          type: string
+                          title: 'The Message Schema '
+                          example: Item Not Found
+    '409':
+      description: Conflict. An item already exists with the information provided.
+      content:
+        application/vnd.api+json:
+          schema:
+            type: object
+            properties:
+              errors:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    status:
+                      type: integer
+                      title: 'The Status Schema '
+                      example: 409
+                    detail:
+                      type: object
+                      properties:
+                        message:
+                          type: string
+                          title: 'The Message Schema '
+                          example: Conflict. An item already exists with the information provided.
+    '500':
+      description: Internal server error
+      content:
+        application/vnd.api+json:
+          schema:
+            type: object
+            properties:
+              errors:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    status:
+                      type: integer
+                      title: 'The Status Schema '
+                      example: 500
+                    detail:
+                      type: object
+                      properties:
+                        message:
+                          type: string
+                          title: 'The Message Schema '
+                          example: Internal Server Error
